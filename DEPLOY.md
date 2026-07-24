@@ -2,16 +2,20 @@
 
 Bu sayt **2 qismdan** iborat va **ikkalasi ham internetda ishlashi kerak**:
 
-| Qism | Nima | Qayerda ishlaydi |
+| Qism | Nima | Qayerda ishlaydi (bepul) |
 |---|---|---|
-| **Backend** (`backend/`) | Python/FastAPI + AI agent | Hugging Face Spaces (bepul) |
-| **Frontend** (`frontend/`) | Next.js chat oynasi | Vercel (bepul) |
+| **Backend** (`backend/`) | Python/FastAPI + AI agent | **Render.com** |
+| **Frontend** (`frontend/`) | Next.js chat oynasi | **Vercel** |
 
 > ⚠️ **404 xatosining sababi shu edi:** GitHub Pages faqat statik sayt beradi, Python
 > backend'ni ishlata olmaydi. Backend hech qayerda ishlamagani uchun `/chat` → 404.
-> Quyidagi qadamlarni bajarib, backend'ni Hugging Face'ga qo'ysangiz — 404 yo'qoladi.
+> Backend'ni Render'ga qo'ysangiz — 404 yo'qoladi.
 
-Jami ~15-20 daqiqa. Karta (bank kartasi) **kerak emas** — hammasi bepul.
+> ℹ️ **Nega Render (Hugging Face emas)?** Hugging Face endi Docker Space'larni bepul
+> ishlatish uchun pullik **PRO** obuna talab qiladi. Render esa Docker'ni bepul,
+> kartasiz va to'g'ridan-to'g'ri GitHub repongizdan ishga tushiradi.
+
+Jami ~15 daqiqa. Bank kartasi **kerak emas** — hammasi bepul.
 
 ---
 
@@ -19,145 +23,98 @@ Jami ~15-20 daqiqa. Karta (bank kartasi) **kerak emas** — hammasi bepul.
 
 1. Brauzerda oching: <https://aistudio.google.com/apikey>
 2. Google akkauntingiz bilan kiring.
-3. **"Create API key"** tugmasini bosing.
-4. Chiqqan kalitni (`AIza...` bilan boshlanadi) **nusxalab, biror joyga saqlab qo'ying.**
+3. **"Create API key"** → **"Create API key in new project"**.
+4. Chiqqan kalitni (`AIza...` bilan boshlanadi) **nusxalab, saqlab qo'ying.**
 
-> Bu kalit AI'ning "miyasi"ga ulanish uchun. Uni **hech kimga ko'rsatmang** va
-> kodga yozmang — pastda uni maxfiy (secret) sifatida qo'yamiz.
+> Bu kalit AI'ning "miyasi"ga ulanish uchun. Uni kodga yozmang — pastda Render'ning
+> maxfiy (secret) maydoniga qo'yasiz.
 
 ---
 
-## 2-qadam — Backend'ni Hugging Face Spaces'ga qo'yish
+## 2-qadam — Backend'ni Render.com'ga qo'yish
 
-### 2.1. Space yaratish
-1. <https://huggingface.co/join> — akkaunt oching (bepul).
-2. <https://huggingface.co/new-space> — yangi Space yarating:
-   - **Space name:** masalan `agentic-rag`
-   - **License:** ixtiyoriy (masalan `mit`)
-   - **Select the SDK:** **Docker** ni tanlang (muhim!) → **Blank** shablon.
-   - **Space hardware:** `CPU basic` (bepul).
-   - **Create Space** bosing.
+Kod GitHub'da tayyor (`render.yaml` blueprint bor), shuning uchun bu deyarli avtomat.
 
-### 2.2. `backend/` papkasining ICHINI Space'ga yuklash
+1. <https://dashboard.render.com> — oching va **"Sign in with GitHub"** bilan kiring
+   (bepul, karta so'ramaydi).
+2. Yuqori o'ngdan **New +** → **Blueprint**.
+3. GitHub repongizni tanlang: **`jsmumina/rag`** → **Connect**.
+   - (Agar repo ko'rinmasa: **Configure account** → Render'ga repoga ruxsat bering.)
+4. Render `render.yaml` ni o'qib, **`rag-backend`** xizmatini ko'rsatadi.
+   Pastda **`GOOGLE_API_KEY`** maydonini so'raydi → 1-qadamdagi Gemini kalitni
+   o'sha yerga qo'ying. (`TAVILY_API_KEY` ni bo'sh qoldiring — ixtiyoriy.)
+5. **Apply** (yoki **Create**) bosing. Render Docker image'ini quradi — birinchi
+   marta **3-6 daqiqa** ketishi mumkin. **"Live"** (yashil) bo'lguncha kuting.
 
-Space ochilgach, u sizga git manzilини beradi (masalan
-`https://huggingface.co/spaces/SIZNING_ISMINGIZ/agentic-rag`).
-
-**Terminal orqali (tavsiya):**
-
-```bash
-# loyiha papkangizdagi backend'ga kiring
-cd backend
-
-# Space repozitoriyasini nusxa ko'chirib olish uchun (ALOHIDA papkaga):
-cd ..
-git clone https://huggingface.co/spaces/SIZNING_ISMINGIZ/agentic-rag hf-space
-
-# backend ichidagi hamma narsani Space papkasiga ko'chiring:
-#   Dockerfile, requirements.txt, README.md, app/  (papkasi bilan)
-# (Windows PowerShell'da):
-Copy-Item -Recurse -Force backend/* hf-space/
-
-cd hf-space
-git add .
-git commit -m "Add Adaptive Agentic RAG backend"
-git push
-```
-
-> Space repo'sining **ildizida** (root) shu fayllar bo'lishi shart:
-> `Dockerfile`, `requirements.txt`, `README.md`, va `app/` papkasi.
-> Bular aynan `backend/` ичida turibdi.
-
-> **Eslatma:** git push paytida HF login/parol so'raydi. Parol o'rniga
-> <https://huggingface.co/settings/tokens> dan **Access Token** (write huquqli)
-> yarating va o'shani ishlating.
-
-**Yoki — web orqali (terminalsiz):** Space sahifasidagi **Files → Add file →
-Upload files** orqali `Dockerfile`, `requirements.txt`, `README.md` fayllarini va
-`app/` papkasidagi barcha `.py` fayllarni yuklang (`app/` papkasini saqlab).
-
-### 2.3. Maxfiy kalitni qo'yish (eng muhim qadam!)
-1. Space sahifasida yuqoridagi **Settings** ni oching.
-2. **Variables and secrets** bo'limiga tushing.
-3. **New secret** bosing:
-   - **Name:** `GOOGLE_API_KEY`
-   - **Value:** 1-qadamda olgan kalitingiz (`AIza...`)
-   - Saqlang.
-4. (Ixtiyoriy) Internetdan qidirish uchun `TAVILY_API_KEY` ni ham shu tarzda
-   qo'shsangiz bo'ladi (<https://tavily.com> dan bepul olinadi). Shart emas.
-
-Kalit qo'yilgach, Space o'zini qayta quradi (build). Yuqorida **"Running"**
-(yashil) yozuvi chiqguncha 2-4 daqiqa kuting.
-
-### 2.4. Backend ishlаyaptimi — tekshirish
-Brauzerda oching (o'z manzilingiz bilan):
+### Backend ishlаyaptimi — tekshirish
+Render bergan manzil shунга o'xshaydi: `https://rag-backend.onrender.com`
+(aniq manzil Render sahifasида yuqorида yozilgan). Uning oxiriga `/health` qo'shib oching:
 
 ```
-https://SIZNING_ISMINGIZ-agentic-rag.hf.space/health
+https://rag-backend.onrender.com/health
 ```
 
-Agar shунга o'xshash javob chiqsa — backend tayyor ✅:
+Shунга o'xshash javob chiqsa — backend tayyor ✅:
 ```json
 {"status":"ok","provider":"google","chat_model":"gemini-2.0-flash", ...}
 ```
 
-> **Backend'ni frontend'siz sinab ko'rish:** `.../docs` manzilini oching (masalan
-> `https://...hf.space/docs`) — bu yerdan `POST /chat` ni bosib, `{"question": "hi"}`
-> yuborib, AI salomlashishini o'z ko'zingiz bilan ko'rasiz.
+> **Frontend'siz sinash:** manzil oxiriga `/docs` qo'shib oching — u yerdan
+> `POST /chat` ni bosib, `{"question": "hi"}` yuborib, AI salomlashishini ko'rasiz.
 
-**Bu `https://SIZNING_ISMINGIZ-agentic-rag.hf.space` manzilini eslab qoling** —
-keyingi qadamда kerak bo'ladi.
+> ⚠️ **Render bepul tarifi haqида:** xizmat 15 daqiqa ishlatilmasa "uxlaydi",
+> keyingi so'rovда ~1 daqiqa uyg'onadi (birinchi javob sekin bo'ladi — bu normal).
+
+**Bu `https://rag-backend.onrender.com` manzilini eslab qoling** — keyingi qadamда kerak.
 
 ---
 
 ## 3-qadam — Frontend'ni Vercel'ga qo'yish va backend'ga ulash
 
-> Frontend Next.js'da yozilgan, shuning uchun **Vercel** eng mos (GitHub Pages
-> Next.js'ni to'liq ishlata olmaydi).
-
 1. <https://vercel.com/signup> — GitHub akkauntingiz bilan kiring.
-2. **Add New → Project** → GitHub'dagi shu repozitoriyani tanlang (**Import**).
+2. **Add New → Project** → `jsmumina/rag` repozitoriyani **Import** qiling.
 3. **Muhim sozlamalar:**
    - **Root Directory:** `frontend` ni tanlang (butun repo emas!).
-   - **Environment Variables** bo'limida qo'shing:
+   - **Environment Variables** ga qo'shing:
      - **Name:** `NEXT_PUBLIC_API_URL`
      - **Value:** 2-qadamdagi backend manzili, masalan
-       `https://SIZNING_ISMINGIZ-agentic-rag.hf.space`
-       (oxirida `/` **qo'ymang**).
-4. **Deploy** bosing. 1-2 daqiqada sayt tayyor bo'ladi.
+       `https://rag-backend.onrender.com` (oxirида `/` **qo'ymang**).
+4. **Deploy** bosing. 1-2 daqiqада sayt tayyor.
 
-> Agar frontend'ni allaqachon Vercel'ga qo'ygan bo'lsangiz: **Settings →
-> Environment Variables** ga `NEXT_PUBLIC_API_URL` ni qo'shing/tuzating, so'ng
-> **Deployments → ... → Redeploy** bosing (env o'zgarishi faqat qayta deploy'дан
-> keyin kuchga kiradi).
+> Agar allaqачон Vercel'ga qo'ygan bo'lsangiz: **Settings → Environment Variables**
+> ga `NEXT_PUBLIC_API_URL` ni qo'shing/tuzating, so'ng **Deployments → ⋯ → Redeploy**
+> (env o'zgarishi faqat qayta deploy'дан keyin kuchга kiradi).
 
 ---
 
 ## 4-qadam — Sinash 🎉
 
-1. Vercel bergan sayt manzilini oching.
-2. Pastdagi maydonga **`hi`** deb yozing → AI do'stona salom qaytarishi kerak.
+1. Vercel bergan sayt manzilини oching.
+2. Pastдаги maydonga **`hi`** deб yozing → AI do'stona salom qaytarishi kerak.
 3. Istalgan savolни yozing — AI javob beradi.
 4. Hujjat bo'yicha savol-javob uchun: **Upload a document** orqali PDF/txt yuklang,
-   keyin o'sha hujjat haqida so'rang — agent hujjatdan aniq javob beradi.
+   keyin o'sha hujjat haqида so'rang — agent hujjatдан aniq javob beradi.
 
 ---
 
 ## Nima o'zgardi (bu tuzatishда)
 
-- **`hi` va har qanday xabarga javob:** avval agent faqat yuklangan hujjatdan
+- **`hi` va har qanday xabarга javob:** avval agent faqat yuklangan hujjatдан
   javob berardi, hujjat bo'lmasa "bilmayman" derди. Endi mos hujjat topilmasa,
   u oddiy AI suhbatdosh bo'lib javob beradi (`backend/app/nodes.py` → `generate`).
-- **Backend root `/`:** endi backend'ning asosiy manzilini ochsangiz 404 emas,
+- **Backend root `/`:** endi backend'ning asosiy manzилини ochsangiz 404 emas,
   foydali ma'lumot chiqadi (`backend/app/main.py`).
-- **Frontend xato xabari:** 404 va "ulanmadi" holatlari endi aniq, tushunarli
-  ko'rsatiladi (`frontend/app/page.tsx`).
+- **Frontend xato xabari:** 404 va "ulanmadi" holatlari endi aniq ko'rsatiladi
+  (`frontend/app/page.tsx`).
+- **`render.yaml` + Dockerfile:** backend Render'да bir tugma bilan (blueprint)
+  bepul ishga tushadigan qilib sozlandi; port endi `$PORT` orqali moslashadi.
 
 ## Tez-tez uchraydigan muammolar
 
 | Muammo | Yechim |
 |---|---|
-| `/chat` hali ham 404 | `NEXT_PUBLIC_API_URL` backend manziliga to'g'ri ulanganini va Vercel'da **qayta deploy** qilganingizni tekshiring. |
-| Sayt "Couldn't reach the backend" deydi | Backend Space "Running" (yashil) holatда emas — HF Space'ni oching, log'ларни ko'ring. Kalit (`GOOGLE_API_KEY`) qo'yilganini tekshiring. |
-| Backend qizil "Runtime error" | Ko'pincha `GOOGLE_API_KEY` yo'q yoki xato. Settings → secrets ni tekshiring. |
-| Javoblar sekin | Bepul CPU'da birinchi so'rov sekinroq bo'ladi — normal holat. |
+| `/chat` hali ham 404 | Vercel'да `NEXT_PUBLIC_API_URL` backend manzилига to'g'ri ulanganини va **qayta deploy** qilganingизни tekshiring. |
+| Sayt "Couldn't reach the backend" deydi | Render xizmati "Live" emas yoki uxлаган (birinchi so'rov sekin). Render sahифасida **Logs** ni ko'ring; `GOOGLE_API_KEY` qo'yilганини tekshiring. |
+| Render build "failed" | Ko'pincha `GOOGLE_API_KEY` yo'q yoki xato. Render → xizmat → **Environment** → kalitни tekshiring, so'ng **Manual Deploy**. |
+| Birinchi javob juda sekin | Bepul tarif 15 daqiqадан keyin uxлaydi, uyg'onishi ~1 daqiqа — normal holat. |
+| Hujjatlar restart'дан keyin yo'qoladi | Bepul disk vaqtинча. Doimiy saqlash uchun bepul **Qdrant Cloud** ochib, `QDRANT_URL`/`QDRANT_API_KEY` ni Render env'ga qo'shing. |

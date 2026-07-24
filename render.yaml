@@ -1,0 +1,25 @@
+# Render.com blueprint — deploys the FastAPI backend as a FREE Docker web service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# How to use (one time, in the browser):
+#   1. https://dashboard.render.com  ->  sign in with GitHub
+#   2. New +  ->  Blueprint  ->  pick the repo  jsmumina/rag
+#   3. Render reads this file and creates the "rag-backend" service.
+#   4. It will ask you for the GOOGLE_API_KEY value (marked sync:false below) —
+#      paste your free Gemini key (https://aistudio.google.com/apikey).
+#   5. Apply / Create -> wait for the build -> open the .onrender.com URL + /health
+services:
+  - type: web
+    name: rag-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      # You enter this in the Render dashboard — it is NOT stored in the repo.
+      - key: GOOGLE_API_KEY
+        sync: false
+      # Optional: enables the web-search fallback node. Leave unset to skip it.
+      - key: TAVILY_API_KEY
+        sync: false

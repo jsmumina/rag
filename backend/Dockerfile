@@ -16,7 +16,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY --chown=user app ./app
 
-# Hugging Face Spaces expects the container to listen on port 7860.
+# Listen on the port the host provides ($PORT on Render), falling back to 7860
+# (Hugging Face Spaces' expected port) when it isn't set.
 EXPOSE 7860
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
