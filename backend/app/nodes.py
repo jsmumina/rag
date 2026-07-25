@@ -124,22 +124,25 @@ def web_search(state: GraphState) -> dict:
 # ---------- 4) GENERATE ----------
 
 _generate_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an assistant answering questions using ONLY the provided context. "
-               "If the context does not contain the answer, say you don't know — do not "
-               "make anything up. Answer in the same language as the question. Be concise "
-               "and cite which piece of context you used when relevant."),
+    ("system",
+     "You are a helpful assistant. Answer the question directly and completely, with no "
+     "unnecessary preamble, filler, or follow-up questions.\n"
+     "Use the provided context (from the user's uploaded documents) as your primary "
+     "source. If the context does NOT contain the answer, answer from your own general "
+     "knowledge instead — never refuse and never say the documents don't mention it.\n"
+     "Always reply in the SAME language as the question (Uzbek, Russian, English, etc.)."),
     ("human", "Context:\n\n{context}\n\nQuestion: {question}"),
 ])
 
-# Used when retrieval + grading left no relevant context (empty vector store,
-# greetings like "hi", or general-knowledge questions). Instead of forcing an
-# "I don't know", the agent falls back to being a normal, friendly assistant so
-# the site behaves like a general AI chatbot as well as a document Q&A tool.
+# Used when retrieval left no relevant context (empty vector store, greetings, or
+# general-knowledge questions). The agent answers as a normal AI assistant so the
+# site works as a general chatbot as well as a document Q&A tool.
 _general_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a friendly, helpful AI assistant on a website. There are no "
-               "relevant documents for this message, so answer naturally from your own "
-               "knowledge. Handle greetings and small talk warmly, and answer general "
-               "questions clearly and concisely. Reply in the same language as the user."),
+    ("system",
+     "You are a helpful assistant. Answer the question directly and completely, with no "
+     "unnecessary preamble, filler, or follow-up questions. Keep greetings short and "
+     "natural.\n"
+     "Always reply in the SAME language as the user (Uzbek, Russian, English, etc.)."),
     ("human", "{question}"),
 ])
 
@@ -182,31 +185,7 @@ _answers_question_prompt = ChatPromptTemplate.from_messages([
 
 
 def route_after_generate(state: GraphState) -> str:
-    if state.get("retries", 0) >= MAX_RETRIES:
-        return "useful"  # retry cap guarantees the graph terminates
-
-    if not state.get("documents"):
-        return "useful"  # nothing to ground against; don't loop
-
-    llm = get_llm()
-    documents = "\n\n".join(state.get("documents", []))
-    generation = state["generation"]
-    question = state["question"]
-
-    grounded = (
-        (_groundedness_prompt | llm.with_structured_output(GroundednessGrade))
-        .invoke({"documents": documents, "generation": generation})
-        .binary_score.strip().lower().startswith("y")
-    )
-    if not grounded:
-        return "not_grounded"
-
-    answers = (
-        (_answers_question_prompt | llm.with_structured_output(AnswersQuestionGrade))
-        .invoke({"question": question, "generation": generation})
-        .binary_score.strip().lower().startswith("y")
-    )
-    if not answers and _web_search_available() and not state.get("web_used"):
-        return "not_useful"
-
+    # Accept the first answer and end. `generate` already falls back to general
+    # knowledge when the documents don't cover the question, so a groundedness
+    # re-loop would only fight that fallback and burn free-tier tokens + latency.
     return "useful"
