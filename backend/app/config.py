@@ -2,7 +2,7 @@
 Central configuration: chat/vision LLMs, embeddings, and the Qdrant vector store.
 
 Provider auto-detection (as described in the project guide):
-  - GOOGLE_API_KEY set  -> Google Gemini   (free tier, embedding dim 768)
+  - GOOGLE_API_KEY set  -> Google Gemini   (free tier, embedding dim 3072)
   - OPENAI_API_KEY set  -> OpenAI          (embedding dim 1536)
 Set LLM_PROVIDER=google|openai to force one when both keys are present.
 
@@ -37,8 +37,10 @@ if PROVIDER == "openai" and not _HAS_OPENAI:
 if PROVIDER == "google":
     _DEF_CHAT = "gemini-2.0-flash"
     _DEF_VISION = "gemini-2.0-flash"
-    _DEF_EMBED = "models/text-embedding-004"
-    _DEF_DIM = 768
+    # text-embedding-004 was retired; gemini-embedding-001 is the current GA
+    # Gemini embedding model (3072-dim output).
+    _DEF_EMBED = "models/gemini-embedding-001"
+    _DEF_DIM = 3072
     _DEF_COLLECTION = "agentic_rag_gemini"
 else:
     _DEF_CHAT = "gpt-4o-mini"
