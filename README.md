@@ -40,7 +40,7 @@ The backend auto-detects the provider from your keys (as the guide describes):
 
 | Key set | Provider | Chat / vision | Embeddings | Dim | Collection |
 |---|---|---|---|---|---|
-| `GOOGLE_API_KEY` | Google Gemini (free) | `gemini-2.0-flash` | `models/gemini-embedding-001` | 3072 | `agentic_rag_gemini` |
+| `GOOGLE_API_KEY` | Google Gemini (free) | `gemini-flash-latest` | `models/gemini-embedding-001` | 3072 | `agentic_rag_gemini` |
 | `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` | `text-embedding-3-small` | 1536 | `agentic_rag_openai` |
 
 Set `LLM_PROVIDER=google|openai` to force one. Each provider gets its own Qdrant

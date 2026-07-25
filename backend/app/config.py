@@ -35,8 +35,11 @@ if PROVIDER == "openai" and not _HAS_OPENAI:
 # ---------- per-provider defaults ----------
 
 if PROVIDER == "google":
-    _DEF_CHAT = "gemini-2.0-flash"
-    _DEF_VISION = "gemini-2.0-flash"
+    # Pinned model names (gemini-2.0-flash, gemini-2.5-flash) now return HTTP 429
+    # "free tier limit: 0" or 404 for newly-issued API keys. gemini-flash-latest
+    # is the alias that stays on a currently free-tier-eligible flash model.
+    _DEF_CHAT = "gemini-flash-latest"
+    _DEF_VISION = "gemini-flash-latest"
     # text-embedding-004 was retired; gemini-embedding-001 is the current GA
     # Gemini embedding model (3072-dim output).
     _DEF_EMBED = "models/gemini-embedding-001"
